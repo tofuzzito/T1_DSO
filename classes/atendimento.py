@@ -1,9 +1,9 @@
+from datetime import date
 from typing import List
-from classes.pagamento import Pagamento
-from classes.procedimento import Procedimento
 from classes.paciente import Paciente
 from classes.clinica import Clinica
-from datetime import date
+from classes.procedimento import Procedimento
+from classes.pagamento import Pagamento
 
 class Atendimento:
     def __init__(self, data: date, horarioInicio: str, horarioFim: str, valor: float, 
