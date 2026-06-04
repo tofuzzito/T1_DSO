@@ -7,6 +7,14 @@ class Pessoa(ABC):
         self.cpf = cpf
 
     def validarCpf(self) -> bool:
-        # Validação simples
-        return len(self.cpf) == 11 and self.cpf.isdigit()
-    
+
+        cpf = self.cpf.replace(".", "").replace("-", "")
+
+        if len(cpf) != 11:
+            return False
+
+        if not cpf.isdigit():
+            return False
+
+        return True
+
