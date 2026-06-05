@@ -1,11 +1,11 @@
 import sys
-from .ClinicaController import ClinicaController
-from .PacienteController import PacienteController
-from .ProfissionalController import ProfissionalController
-from .ProcedimentoController import ProcedimentoController
-from .TipoAtendimentoController import TipoAtendimentoController
-from .AtendimentoController import AtendimentoController
-from .RelatorioController import RelatorioController
+from controladores.ClinicaController import ClinicaController
+from controladores.PacienteController import PacienteController
+from controladores.ProfissionalController import ProfissionalController
+from controladores.ProcedimentoController import ProcedimentoController
+from controladores.TipoAtendimentoController import TipoAtendimentoController
+from controladores.AtendimentoController import AtendimentoController
+from controladores.RelatorioController import RelatorioController
 
 class ControladorSistema:
     def __init__(self):
