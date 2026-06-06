@@ -1,18 +1,14 @@
 from datetime import datetime
 from classes.atendimento import Atendimento
 from views.AtendimentoView import AtendimentoView
-# Importando o novo controlador obrigatório da divisão de tarefas
 from controladores.PagamentoController import PagamentoController 
 
 class AtendimentoController:
     def __init__(self, c_pacientes, c_clinicas, c_procedimentos, c_tipos):
         self.__atendimentos = []
         self.__view = AtendimentoView()
-        
-        # Centralizando as operações de tela de pagamento no seu respectivo controller
         self.__pagamento_controller = PagamentoController() 
         
-        # Injeção dos controladores necessários para as amarrações e validações
         self.__c_pacientes = c_pacientes
         self.__c_clinicas = c_clinicas
         self.__c_procedimentos = c_procedimentos
@@ -48,10 +44,8 @@ class AtendimentoController:
             abertura = datetime.strptime(clinica.horarioAbertura, formato).time()
             fechamento = datetime.strptime(clinica.horarioFechamento, formato).time()
             
-            if ini >= abertura and fim <= fechamento and ini < fim:
-                return True
-            return False
-        except ValueError:
+            return ini >= abertura and fim <= fechamento and ini < fim
+        except (ValueError, TypeError, AttributeError):
             return False
 
     def calcular_valor_total(self, atendimento) -> float:
@@ -86,17 +80,15 @@ class AtendimentoController:
 
         try:
             data_formatada = datetime.strptime(dados["data"], "%Y-%m-%d").date()
-        except ValueError:
-            self.__view.mostra_mensagem("Erro: Formato de data inválido.")
+        except (ValueError, TypeError):
+            self.__view.mostra_mensagem("Erro: Formato de data inválido (Use AAAA-MM-DD).")
             return
-
-        valor_base = 150.00
 
         novo_atendimento = Atendimento(
             data=data_formatada,
             horarioInicio=dados["horarioInicio"],
             horarioFim=dados["horarioFim"],
-            valor=valor_base,
+            valor=150.00,
             paciente=paciente,
             clinica=clinica,
             tipoAtendimento=tipo
@@ -167,7 +159,6 @@ class AtendimentoController:
         self.__view.mostra_mensagem(f"Procedimento '{procedimento.descricao}' adicionado ao atendimento!")
 
     def registrar_pagamento(self):
-        """Lógica de Validações delegando a instanciação ao PagamentoController"""
         self.listar()
         if not self.__atendimentos:
             return
@@ -183,33 +174,14 @@ class AtendimentoController:
             self.__view.mostra_mensagem("Este atendimento já está totalmente pago!")
             return
 
-        # DELEGAÇÃO: Tenta chamar o método de pagamento disponível no PagamentoController
-        pagamento_metodo = getattr(
-            self.__pagamento_controller,
-            "processar_fluxo_pagamento",
-            None
-        )
-        if pagamento_metodo is None:
-            pagamento_metodo = getattr(
-                self.__pagamento_controller,
-                "processar_pagamento",
-                None
-            )
-
-        if pagamento_metodo is None:
-            self.__view.mostra_mensagem("Erro: método de pagamento indisponível.")
-            return
-
-        pagamento = pagamento_metodo(restante)
+        # Chama o método revisado que retorna a instância polimórfica
+        pagamento = self.__pagamento_controller.processar_pagamento(restante)
 
         if pagamento is None:
-            # Fluxo cancelado ou dados inválidos dentro do PagamentoController
             return
 
-        # Vincula o objeto gerado à composição de pagamentos do atendimento
         atendimento.adicionar_pagamento(pagamento)
         
-        # Recalcula e dá o feedback
         novo_restante = self.calcular_saldo_restante(atendimento)
         self.__view.mostra_mensagem(f"Pagamento de R$ {pagamento.valorPago:.2f} processado!")
         

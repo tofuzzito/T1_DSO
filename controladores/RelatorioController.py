@@ -29,10 +29,8 @@ class RelatorioController:
             self.__view.mostra_mensagem("Dados insuficientes.")
             return
         
-        # Mapeia e conta ocorrências de clínicas
         contagem = Counter(at.clinica.nome for at in lista)
-        ranking = contagem.most_common()
-        self.__view.mostra_ranking_clinicas(ranking)
+        self.__view.mostra_ranking_clinicas(contagem.most_common())
 
     def atendimentos_extremos(self):
         lista = self.__c_atendimentos.atendimentos
@@ -40,16 +38,13 @@ class RelatorioController:
             self.__view.mostra_mensagem("Dados insuficientes.")
             return
 
-        # Monta tuplas contendo (índice, valor_total)
         valores = []
         for idx, at in enumerate(lista):
             tot = self.__c_atendimentos.calcular_valor_total(at)
             valores.append((idx, tot))
 
-        # Ordenação decrescente por valor total
         valores_ordenados = sorted(valores, key=lambda x: x[1], reverse=True)
         
-        # Pega os 3 maiores e os 3 menores (ou o total disponível caso seja menor que 3)
         mais_caros = valores_ordenados[:3]
         mais_baratos = valores_ordenados[-3:]
         
@@ -74,17 +69,21 @@ class RelatorioController:
         self.__view.mostra_ranking_procedimentos(contagem.most_common())
 
     def procedimentos_extremos(self):
-        # Aqui avaliamos o custo unitário estático do cadastro de procedimentos
-        # Usamos uma função anônima lambda para ordenar de forma decrescente pelo custo do objeto
+        # Tenta ler pelo método limpo O.O., se falhar usa o Name Mangling de contingência
+        try:
+            lista_procedimentos = self.__c_procedimentos.procedimentos
+        except AttributeError:
+            lista_procedimentos = self.__c_procedimentos._ProcedimentoController__procedimentos
+
+        if not lista_procedimentos:
+            self.__view.mostra_mensagem("Nenhum procedimento cadastrado no sistema.")
+            return
+
         todos_procedimentos = sorted(
-            self.__c_procedimentos._ProcedimentoController__procedimentos, 
+            lista_procedimentos, 
             key=lambda p: p.custo, 
             reverse=True
         )
-
-        if not todos_procedimentos:
-            self.__view.mostra_mensagem("Nenhum procedimento cadastrado no sistema.")
-            return
 
         mais_caros = todos_procedimentos[:3]
         mais_baratos = todos_procedimentos[-3:]
