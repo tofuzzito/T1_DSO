@@ -17,7 +17,7 @@ class TipoAtendimentoView:
         return input("Digite a descrição do Tipo de Atendimento: ")
 
     def mostra_tipo(self, tipo):
-        print(f"Descrição: {tipo.descricao}")
+        print(f"• Descrição: {tipo.descricao}")
 
     def mostra_mensagem(self, msg: str):
         print(msg)

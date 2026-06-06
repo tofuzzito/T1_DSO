@@ -8,8 +8,15 @@ class PagamentoView:
         return input("Escolha a modalidade: ")
 
     def pega_dados_comuns(self) -> dict:
+        """Garante que entradas inválidas de float (Ex: usar vírgula) não quebrem o software"""
         data = input("Data do Pagamento (AAAA-MM-DD): ")
-        valor = float(input("Valor a ser Pago: R$ "))
+        valor_str = input("Valor a ser Pago: R$ ").replace(",", ".") # Converte amigavelmente vírgula em ponto
+        
+        try:
+            valor = float(valor_str)
+        except (ValueError, TypeError):
+            valor = -1.0 # Força valor inválido controlado para o validador do controller barrar
+            
         return {"data": data, "valorPago": valor}
 
     def pega_dados_pix(self) -> str:

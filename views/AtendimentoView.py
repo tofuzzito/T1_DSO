@@ -28,7 +28,11 @@ class AtendimentoView:
         }
 
     def pega_id_atendimento(self) -> int:
-        return int(input("Digite o ID do Atendimento: "))
+        """Proteção contra erros de digitação de ID numérico"""
+        try:
+            return int(input("Digite o ID do Atendimento: "))
+        except (ValueError, TypeError):
+            return -1  # Retorna ID inválido controlado para o Except do Controller tratar
 
     def pega_dados_alteracao(self) -> dict:
         print("\n=== ALTERAR HORÁRIOS ===")
@@ -43,7 +47,11 @@ class AtendimentoView:
         print(f"\n[ID: {idx}] Data: {atendimento.data} | Horário: {atendimento.horarioInicio} - {atendimento.horarioFim}")
         print(f"Clínica: {atendimento.clinica.nome} | Paciente: {atendimento.paciente.nome}")
         print(f"Tipo: {atendimento.tipoAtendimento.descricao}")
-        print(f"Procedimentos ({len(atendimento.procedimentos)}): {[p.descricao for p in sorted(atendimento.procedimentos, key=lambda x: x.custo)]}")
+        
+        # Exibição segura de listas vazias ou populadas
+        procedimentos_desc = [p.descricao for p in sorted(atendimento.procedimentos, key=lambda x: x.custo)]
+        print(f"Procedimentos ({len(atendimento.procedimentos)}): {procedimentos_desc if procedimentos_desc else 'Nenhum'}")
+        
         print(f"Valor Base: R$ {atendimento.valor:.2f} | Valor Total (com procedimentos): R$ {valor_total:.2f}")
         print(f"Saldo Restante a Pagar: R$ {saldo_restante:.2f}")
 
