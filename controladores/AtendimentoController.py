@@ -1,14 +1,16 @@
 from datetime import datetime
 from classes.atendimento import Atendimento
-from classes.pagamento import PagamentoPix, PagamentoDinheiro, PagamentoCartao
 from views.AtendimentoView import AtendimentoView
-from views.PagamentoView import PagamentoView
+# Importando o novo controlador obrigatório da divisão de tarefas
+from controladores.PagamentoController import PagamentoController 
 
 class AtendimentoController:
     def __init__(self, c_pacientes, c_clinicas, c_procedimentos, c_tipos):
         self.__atendimentos = []
         self.__view = AtendimentoView()
-        self.__view_pagamento = PagamentoView()
+        
+        # Centralizando as operações de tela de pagamento no seu respectivo controller
+        self.__pagamento_controller = PagamentoController() 
         
         # Injeção dos controladores necessários para as amarrações e validações
         self.__c_pacientes = c_pacientes
@@ -39,7 +41,6 @@ class AtendimentoController:
                 break
 
     def __validar_horario(self, h_inicio: str, h_fim: str, clinica) -> bool:
-        """Validação obrigatória: Horário dentro do funcionamento da clínica."""
         try:
             formato = "%H:%M"
             ini = datetime.strptime(h_inicio, formato).time()
@@ -54,12 +55,10 @@ class AtendimentoController:
             return False
 
     def calcular_valor_total(self, atendimento) -> float:
-        """Soma o valor base do atendimento + custos de todos os procedimentos vinculados."""
         total_procedimentos = sum(p.custo for p in atendimento.procedimentos)
         return atendimento.valor + total_procedimentos
 
     def calcular_saldo_restante(self, atendimento) -> float:
-        """Calcula quanto falta pagar com base nos pagamentos parciais feitos."""
         total_devido = self.calcular_valor_total(atendimento)
         total_pago = sum(pag.valorPago for pag in atendimento.pagamentos)
         return max(0.0, total_devido - total_pago)
@@ -81,7 +80,6 @@ class AtendimentoController:
             self.__view.mostra_mensagem("Erro: Tipo de atendimento não encontrado.")
             return
 
-        # Executa validação de horário de atendimento
         if not self.__validar_horario(dados["horarioInicio"], dados["horarioFim"], clinica):
             self.__view.mostra_mensagem("Erro: Horário fora do expediente da clínica ou inválido.")
             return
@@ -92,7 +90,6 @@ class AtendimentoController:
             self.__view.mostra_mensagem("Erro: Formato de data inválido.")
             return
 
-        # Definindo valor base padrão para o atendimento
         valor_base = 150.00
 
         novo_atendimento = Atendimento(
@@ -170,7 +167,7 @@ class AtendimentoController:
         self.__view.mostra_mensagem(f"Procedimento '{procedimento.descricao}' adicionado ao atendimento!")
 
     def registrar_pagamento(self):
-        """Lógica de Validações de Pagamento (Parciais, Restantes e Modalidades)"""
+        """Lógica de Validações delegando a instanciação ao PagamentoController"""
         self.listar()
         if not self.__atendimentos:
             return
@@ -186,44 +183,36 @@ class AtendimentoController:
             self.__view.mostra_mensagem("Este atendimento já está totalmente pago!")
             return
 
-        modalidade = self.__view_pagamento.escolhe_modalidade()
-        if modalidade == "0" or modalidade not in ["1", "2", "3"]:
+        # DELEGAÇÃO: Tenta chamar o método de pagamento disponível no PagamentoController
+        pagamento_metodo = getattr(
+            self.__pagamento_controller,
+            "processar_fluxo_pagamento",
+            None
+        )
+        if pagamento_metodo is None:
+            pagamento_metodo = getattr(
+                self.__pagamento_controller,
+                "processar_pagamento",
+                None
+            )
+
+        if pagamento_metodo is None:
+            self.__view.mostra_mensagem("Erro: método de pagamento indisponível.")
             return
 
-        dados_comuns = self.__view_pagamento.pega_dados_comuns()
-        try:
-            data_pagm = datetime.strptime(dados_comuns["data"], "%Y-%m-%d").date()
-        except ValueError:
-            self.__view.mostra_mensagem("Data inválida.")
-            return
-
-        val_pago = dados_comuns["valorPago"]
-        if val_pago <= 0:
-            self.__view.mostra_mensagem("O valor pago deve ser maior que zero.")
-            return
-        if val_pago > restante:
-            self.__view.mostra_mensagem(f"Aviso: O valor inserido supera o saldo devedor (R$ {restante:.2f}). Ajustando para o saldo restante.")
-            val_pago = restante
-
-        # Instanciação polimórfica baseada na modalidade escolhida
-        pagamento = None
-        if modalidade == "1":
-            cpf = self.__view_pagamento.pega_dados_pix()
-            pagamento = PagamentoPix(data_pagm, val_pago, cpf)
-        elif modalidade == "2":
-            pagamento = PagamentoDinheiro(data_pagm, val_pago)
-        elif modalidade == "3":
-            card = self.__view_pagamento.pega_dados_cartao()
-            pagamento = PagamentoCartao(data_pagm, val_pago, card["numeroCartao"], card["bandeira"])
+        pagamento = pagamento_metodo(restante)
 
         if pagamento is None:
-            self.__view.mostra_mensagem("Erro: modalidade de pagamento inválida.")
+            # Fluxo cancelado ou dados inválidos dentro do PagamentoController
             return
 
+        # Vincula o objeto gerado à composição de pagamentos do atendimento
         atendimento.adicionar_pagamento(pagamento)
-        novo_restante = self.calcular_saldo_restante(atendimento)
         
-        self.__view.mostra_mensagem(f"Pagamento de R$ {val_pago:.2f} processado!")
+        # Recalcula e dá o feedback
+        novo_restante = self.calcular_saldo_restante(atendimento)
+        self.__view.mostra_mensagem(f"Pagamento de R$ {pagamento.valorPago:.2f} processado!")
+        
         if novo_restante == 0:
             self.__view.mostra_mensagem("Atendimento TOTALMENTE QUITADO!")
         else:
