@@ -35,10 +35,17 @@ class PacienteController:
 
         dados = self.__view.pega_dados_paciente()
 
-        data_nascimento = datetime.strptime(
-            dados["data_nascimento"],
-            "%Y-%m-%d"
-        ).date()
+        try:
+            data_nascimento = datetime.strptime(
+                dados["data_nascimento"],
+                "%Y-%m-%d"
+            ).date()
+
+        except ValueError:
+            self.__view.mostra_mensagem(
+                "Data inválida. Use AAAA-MM-DD."
+            )
+            return
 
         paciente = Paciente(
             dados["nome"],
