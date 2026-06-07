@@ -16,7 +16,20 @@ class ProcedimentoView:
         print("\n=== DADOS DO PROCEDIMENTO ===")
 
         descricao = input("Descrição: ")
-        custo = float(input("Custo: "))
+
+        try:
+            custo = float(
+                input("Custo: ").replace(",", ".")
+            )
+
+        except ValueError:
+
+            self.mostra_mensagem(
+                "Custo inválido."
+            )
+
+            return None
+
         cpf_profissional = input(
             "CPF do profissional responsável: "
         )

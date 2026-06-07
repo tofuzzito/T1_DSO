@@ -39,6 +39,9 @@ class ProcedimentoController:
 
         dados = self.__view.pega_dados_procedimento()
 
+        if dados is None:
+            return
+
         if self.busca_procedimento(
                 dados["descricao"]):
 
