@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class ClinicaView:
 
     def mostra_menu(self):
@@ -12,13 +14,37 @@ class ClinicaView:
         return input("Escolha uma opção: ")
 
     def pega_dados_clinica(self):
-        print("\n=== DADOS DA CLÍNICA ===")
 
         nome = input("Nome: ")
         cidade = input("Cidade: ")
         descricao = input("Descrição: ")
-        horarioAbertura = input("Horário de abertura (HH:MM): ")
-        horarioFechamento = input("Horário de fechamento (HH:MM): ")
+
+        try:
+            horarioAbertura = input(
+                "Horário de abertura (HH:MM): "
+            )
+
+            horarioFechamento = input(
+                "Horário de fechamento (HH:MM): "
+            )
+
+            datetime.strptime(
+                horarioAbertura,
+                "%H:%M"
+            )
+
+            datetime.strptime(
+                horarioFechamento,
+                "%H:%M"
+            )
+
+        except ValueError:
+
+            self.mostra_mensagem(
+                "Horário inválido. Use HH:MM."
+            )
+
+            return None
 
         return {
             "nome": nome,

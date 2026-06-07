@@ -35,6 +35,9 @@ class ClinicaController:
 
         dados = self.__view.pega_dados_clinica()
 
+        if dados is None:
+            return
+
         if self.busca_clinica(dados["nome"]):
 
             self.__view.mostra_mensagem(
@@ -64,7 +67,6 @@ class ClinicaController:
         clinica = self.busca_clinica(nome)
 
         if clinica is None:
-
             self.__view.mostra_mensagem(
                 "Clínica não encontrada."
             )
@@ -73,11 +75,14 @@ class ClinicaController:
 
         dados = self.__view.pega_dados_clinica()
 
+        if dados is None:
+            return
+
         clinica.nome = dados["nome"]
         clinica.cidade = dados["cidade"]
         clinica.descricao = dados["descricao"]
         clinica.horarioAbertura = dados["horarioAbertura"]
-        clinica.horarioFechamento = dados["horariFechamento"]
+        clinica.horarioFechamento = dados["horarioFechamento"]
 
         self.__view.mostra_mensagem(
             "Clínica alterada com sucesso."
