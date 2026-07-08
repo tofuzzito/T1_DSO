@@ -37,7 +37,7 @@ class ProfissionalView:
             f"Nome: {profissional.nome} | "
             f"CPF: {profissional.cpf} | "
             f"Especialidade: {profissional.especialidade} | "
-            f"Registro: {profissional.registro_profissional}"
+            f"Registro: {profissional.registroProfissional}"
         )
 
     def mostra_mensagem(self, mensagem):
