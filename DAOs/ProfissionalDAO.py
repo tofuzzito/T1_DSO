@@ -7,8 +7,8 @@ class ProfissionalDAO(DAO):
 
     def add(self, key: str, obj: Any):
         """Usa o registroConselho contido no objeto como chave."""
-        if obj and getattr(obj, "registroConselho", None):
-            super().add(obj.registroConselho, obj)
+        if obj and getattr(obj, "registroProfissional", None):
+            super().add(obj.registroProfissional, obj)
 
     def get(self, key: str) -> Any:
         return super().get(key)  # type: ignore
