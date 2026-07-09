@@ -1,6 +1,7 @@
 from collections import Counter
 from views.RelatorioView import RelatorioView
 
+
 class RelatorioController:
     def __init__(self, controlador_atendimentos, controlador_procedimentos):
         self.__c_atendimentos = controlador_atendimentos
@@ -28,7 +29,7 @@ class RelatorioController:
         if not lista:
             self.__view.mostra_mensagem("Dados insuficientes.")
             return
-        
+
         contagem = Counter(at.clinica.nome for at in lista)
         self.__view.mostra_ranking_clinicas(contagem.most_common())
 
@@ -44,10 +45,10 @@ class RelatorioController:
             valores.append((idx, tot))
 
         valores_ordenados = sorted(valores, key=lambda x: x[1], reverse=True)
-        
+
         mais_caros = valores_ordenados[:3]
         mais_baratos = valores_ordenados[-3:]
-        
+
         self.__view.mostra_extremos_atendimentos(mais_caros, mais_baratos)
 
     def procedimentos_mais_realizados(self):
@@ -62,7 +63,8 @@ class RelatorioController:
                 todos_proc.append(proc.descricao)
 
         if not todos_proc:
-            self.__view.mostra_mensagem("Nenhum procedimento foi realizado em atendimentos ainda.")
+            self.__view.mostra_mensagem(
+                "Nenhum procedimento foi realizado em atendimentos ainda.")
             return
 
         contagem = Counter(todos_proc)
@@ -76,12 +78,19 @@ class RelatorioController:
             lista_procedimentos = self.__c_procedimentos._ProcedimentoController__procedimentos
 
         if not lista_procedimentos:
-            self.__view.mostra_mensagem("Nenhum procedimento cadastrado no sistema.")
+            self.__view.mostra_mensagem(
+                "Nenhum procedimento cadastrado no sistema.")
             return
 
+        # Garante a compatibilidade se o retorno for um dicionário do DAO (.values()) ou lista pura
+        if hasattr(lista_procedimentos, 'values'):
+            lista_procedimentos = list(lista_procedimentos.values())
+        elif not isinstance(lista_procedimentos, list):
+            lista_procedimentos = list(lista_procedimentos)
+
         todos_procedimentos = sorted(
-            lista_procedimentos, 
-            key=lambda p: p.custo, 
+            lista_procedimentos,
+            key=lambda p: p.custo,
             reverse=True
         )
 
