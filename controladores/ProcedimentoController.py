@@ -2,9 +2,11 @@ from classes.procedimento import Procedimento
 from views.ProcedimentoView import ProcedimentoView
 from DAOs.ProcedimentoDAO import ProcedimentoDAO
 
+
 class ProcedimentoController:
     def __init__(self, controlador_profissionais):
         self.__dao = ProcedimentoDAO()
+        # Ajustado para usar a instância da nova View gráfica
         self.__view = ProcedimentoView()
         self.__c_profissionais = controlador_profissionais
 
@@ -14,7 +16,7 @@ class ProcedimentoController:
 
     def abre_tela(self):
         lista_opcoes = {
-            "1": self.incluir, "2": self.alterar, 
+            "1": self.incluir, "2": self.alterar,
             "3": self.excluir, "4": self.listar, "0": self.retornar
         }
         while True:
@@ -31,17 +33,21 @@ class ProcedimentoController:
             self.__view.mostra_mensagem("Procedimento já cadastrado.")
             return
 
-        profissional = self.__c_profissionais.busca_profissional(dados["cpf_profissional"])
+        profissional = self.__c_profissionais.busca_profissional(
+            dados["cpf_profissional"])
         if not profissional:
             self.__view.mostra_mensagem("Profissional não encontrado.")
             return
 
-        procedimento = Procedimento(dados["descricao"], dados["custo"], profissional)
+        procedimento = Procedimento(dados["descricao"], dados["custo"],
+                                    profissional)
         self.__dao.add(procedimento.descricao, procedimento)
         self.__view.mostra_mensagem("Procedimento cadastrado.")
 
     def alterar(self):
         descricao = self.__view.pega_descricao()
+        if not descricao: return  # Proteção para o botão Cancelar da GUI
+
         procedimento = self.busca_procedimento(descricao)
 
         if not procedimento:
@@ -51,7 +57,8 @@ class ProcedimentoController:
         dados = self.__view.pega_dados_procedimento()
         if not dados: return
 
-        profissional = self.__c_profissionais.busca_profissional(dados["cpf_profissional"])
+        profissional = self.__c_profissionais.busca_profissional(
+            dados["cpf_profissional"])
         if not profissional:
             self.__view.mostra_mensagem("Profissional não encontrado.")
             return
@@ -64,10 +71,12 @@ class ProcedimentoController:
         procedimento.profissional = profissional
 
         self.__dao.add(procedimento.descricao, procedimento)
-        self.__view.mostra_mensagem("Procedimento alterado.")
+        self.__view.mostra_mensagem("Procedimento alteredo.")
 
     def excluir(self):
         descricao = self.__view.pega_descricao()
+        if not descricao: return  # Proteção para o botão Cancelar da GUI
+
         if not self.busca_procedimento(descricao):
             self.__view.mostra_mensagem("Procedimento não encontrado.")
             return
@@ -80,8 +89,19 @@ class ProcedimentoController:
         if not procedimentos:
             self.__view.mostra_mensagem("Nenhum procedimento cadastrado.")
             return
+
+        # Otimizado: Junta todos os procedimentos em um único texto corrido
+        # para exibir tudo em um popup só na tela, em vez de abrir várias caixas
+        conteudo_lista = "=== LISTA DE PROCEDIMENTOS ===\n\n"
         for proc in procedimentos:
-            self.__view.mostra_procedimento(proc)
+            nome_prof = getattr(proc.profissional, 'nome', 'Não informado')
+            conteudo_lista += (
+                f"Descrição: {proc.descricao}\n"
+                f"Custo: R$ {proc.custo:.2f}\n"
+                f"Profissional Resp.: {nome_prof}\n"
+                f"----------------------------------------\n"
+            )
+        self.__view.mostra_mensagem(conteudo_lista)
 
     def busca_procedimento(self, descricao):
         return self.__dao.get(descricao)

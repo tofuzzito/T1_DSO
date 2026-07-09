@@ -2,6 +2,7 @@ from classes.atendimento import TipoAtendimento
 from views.TipoAtendimentoView import TipoAtendimentoView
 from DAOs.DAO import DAO
 
+
 class TipoAtendimentoController:
     def __init__(self):
         self.__dao = DAO("tipos_atendimento.pkl")
@@ -20,46 +21,62 @@ class TipoAtendimentoController:
 
     def incluir(self):
         dados = self.__view.pega_dados()
+        if not dados: return  # Proteção para o botão Cancelar/Fechar da GUI
+
         if self.busca_tipo(dados["descricao"]):
             self.__view.mostra_mensagem("Esse tipo de atendimento já existe.")
             return
 
         novo_tipo = TipoAtendimento(dados["descricao"])
         self.__dao.add(novo_tipo.descricao, novo_tipo)
-        self.__view.mostra_mensagem("Tipo de atendimento cadastrado com sucesso!")
+        self.__view.mostra_mensagem(
+            "Tipo de atendimento cadastrado com sucesso!")
 
     def alterar(self):
         desc = self.__view.pega_descricao()
+        if not desc: return  # Proteção para o botão Cancelar/Fechar da GUI
+
         tipo = self.busca_tipo(desc)
         if not tipo:
             self.__view.mostra_mensagem("Tipo de atendimento não encontrado.")
             return
 
         dados = self.__view.pega_dados()
+        if not dados: return  # Proteção para o botão Cancelar/Fechar da GUI
+
         self.__dao.remove(tipo.descricao)
         tipo.descricao = dados["descricao"]
         self.__dao.add(tipo.descricao, tipo)
-        self.__view.mostra_mensagem("Tipo de atendimento alterado com sucesso!")
+        self.__view.mostra_mensagem(
+            "Tipo de atendimento alterado com sucesso!")
 
     def excluir(self):
         desc = self.__view.pega_descricao()
+        if not desc: return  # Proteção para o botão Cancelar/Fechar da GUI
+
         if not self.busca_tipo(desc):
             self.__view.mostra_mensagem("Tipo de atendimento não encontrado.")
             return
 
         self.__dao.remove(desc)
-        self.__view.mostra_mensagem("Tipo de atendimento removido com sucesso.")
+        self.__view.mostra_mensagem(
+            "Tipo de atendimento removido com sucesso.")
 
     def listar(self):
         tipos = self.__dao.get_all()
         if not tipos:
             self.__view.mostra_mensagem("Nenhum tipo cadastrado.")
             return
+
+        # Otimizado: Junta tudo em uma única string legível para a tela gráfica
+        conteudo_lista = "=== LISTA DE TIPOS DE ATENDIMENTO ===\n\n"
         for t in tipos:
-            self.__view.mostra_tipo(t)
+            conteudo_lista += f"• Descrição: {t.descricao}\n"
+
+        self.__view.mostra_mensagem(conteudo_lista)
 
     def busca_tipo(self, descricao):
-        # A busca em DAOs genéricos diferencia maiúsculas, garantindo flexibilidade
+        if not descricao: return None
         for t in self.__dao.get_all():
             if t.descricao.lower() == descricao.lower():
                 return t

@@ -1,15 +1,16 @@
 from datetime import datetime
 from classes.atendimento import Atendimento
 from views.AtendimentoView import AtendimentoView
-from controladores.PagamentoController import PagamentoController 
+from controladores.PagamentoController import PagamentoController
 from DAOs.AtendimentoDAO import AtendimentoDAO
+
 
 class AtendimentoController:
     def __init__(self, c_pacientes, c_clinicas, c_procedimentos, c_tipos):
         self.__dao = AtendimentoDAO()
         self.__view = AtendimentoView()
-        self.__pagamento_controller = PagamentoController() 
-        
+        self.__pagamento_controller = PagamentoController()
+
         self.__c_pacientes = c_pacientes
         self.__c_clinicas = c_clinicas
         self.__c_procedimentos = c_procedimentos
@@ -18,7 +19,7 @@ class AtendimentoController:
     @property
     def atendimentos(self):
         return self.__dao.get_all()
-    
+
     def __gerar_chave(self, atendimento):
         """Helper interno para garantir chave única no DAO"""
         return f"{atendimento.data}_{atendimento.horarioInicio}_{atendimento.paciente.cpf}"
@@ -26,7 +27,7 @@ class AtendimentoController:
     def abre_tela(self):
         lista_opcoes = {
             "1": self.incluir, "2": self.alterar, "3": self.excluir,
-            "4": self.listar, "5": self.adicionar_procedimento, 
+            "4": self.listar, "5": self.adicionar_procedimento,
             "6": self.registrar_pagamento, "0": self.retornar
         }
         while True:
@@ -39,10 +40,13 @@ class AtendimentoController:
         try:
             ini = datetime.strptime(h_inicio, "%H:%M").time()
             fim = datetime.strptime(h_fim, "%H:%M").time()
-            abertura = datetime.strptime(clinica.horarioAbertura, "%H:%M").time()
-            fechamento = datetime.strptime(clinica.horarioFechamento, "%H:%M").time()
+            abertura = datetime.strptime(clinica.horarioAbertura,
+                                         "%H:%M").time()
+            fechamento = datetime.strptime(clinica.horarioFechamento,
+                                           "%H:%M").time()
             return ini >= abertura and fim <= fechamento and ini < fim
-        except: return False
+        except:
+            return False
 
     def calcular_valor_total(self, atendimento) -> float:
         total_procedimentos = sum(p.custo for p in atendimento.procedimentos)
@@ -55,53 +59,64 @@ class AtendimentoController:
 
     def incluir(self):
         dados = self.__view.pega_dados_atendimento()
+        if not dados: return
 
         paciente = self.__c_pacientes.busca_paciente(dados["cpf_paciente"])
         clinica = self.__c_clinicas.busca_clinica(dados["nome_clinica"])
         tipo = self.__c_tipos.busca_tipo(dados["desc_tipo"])
 
         if not paciente or not clinica or not tipo:
-            self.__view.mostra_mensagem("Erro: Vínculo (Paciente/Clínica/Tipo) não encontrado.")
+            self.__view.mostra_mensagem(
+                "Erro: Vínculo (Paciente/Clínica/Tipo) não encontrado.")
             return
 
-        if not self.__validar_horario(dados["horarioInicio"], dados["horarioFim"], clinica):
-            self.__view.mostra_mensagem("Erro: Horário inválido para esta clínica.")
+        if not self.__validar_horario(dados["horarioInicio"],
+                                      dados["horarioFim"], clinica):
+            self.__view.mostra_mensagem(
+                "Erro: Horário inválido para esta clínica.")
             return
 
-        try: data_formatada = datetime.strptime(dados["data"], "%Y-%m-%d").date()
-        except: 
+        try:
+            data_formatada = datetime.strptime(dados["data"],
+                                               "%Y-%m-%d").date()
+        except:
             self.__view.mostra_mensagem("Erro: Formato de data inválido.")
             return
 
         novo_atendimento = Atendimento(
-            data_formatada, dados["horarioInicio"], dados["horarioFim"], 
+            data_formatada, dados["horarioInicio"], dados["horarioFim"],
             150.00, paciente, clinica, tipo
         )
-        
+
         chave = self.__gerar_chave(novo_atendimento)
         self.__dao.add(chave, novo_atendimento)
         self.__view.mostra_mensagem("Atendimento agendado com sucesso!")
 
     def alterar(self):
-        self.listar()
+        self.listar(modo_auxiliar=True)
         lista = self.atendimentos
         if not lista: return
-        
+
+        idx = self.__view.pega_id_atendimento()
+        if idx == -1: return
+
         try:
-            idx = self.__view.pega_id_atendimento()
             atendimento = lista[idx]
         except:
             self.__view.mostra_mensagem("Atendimento inválido.")
             return
 
         dados = self.__view.pega_dados_alteracao()
-        if self.__validar_horario(dados["horarioInicio"], dados["horarioFim"], atendimento.clinica):
+        if not dados: return
+
+        if self.__validar_horario(dados["horarioInicio"], dados["horarioFim"],
+                                  atendimento.clinica):
             chave_antiga = self.__gerar_chave(atendimento)
             self.__dao.remove(chave_antiga)
-            
+
             atendimento.horarioInicio = dados["horarioInicio"]
             atendimento.horarioFim = dados["horarioFim"]
-            
+
             chave_nova = self.__gerar_chave(atendimento)
             self.__dao.add(chave_nova, atendimento)
             self.__view.mostra_mensagem("Horários alterados com sucesso!")
@@ -109,11 +124,14 @@ class AtendimentoController:
             self.__view.mostra_mensagem("Erro: Horários inconsistentes.")
 
     def excluir(self):
-        self.listar()
+        self.listar(modo_auxiliar=True)
         lista = self.atendimentos
         if not lista: return
+
+        idx = self.__view.pega_id_atendimento()
+        if idx == -1: return
+
         try:
-            idx = self.__view.pega_id_atendimento()
             atendimento = lista[idx]
             chave = self.__gerar_chave(atendimento)
             self.__dao.remove(chave)
@@ -121,29 +139,49 @@ class AtendimentoController:
         except:
             self.__view.mostra_mensagem("Atendimento inválido.")
 
-    def listar(self):
+    def listar(self, modo_auxiliar=False):
         lista = self.atendimentos
         if not lista:
-            self.__view.mostra_mensagem("Nenhum atendimento registrado.")
+            if not modo_auxiliar:
+                self.__view.mostra_mensagem("Nenhum atendimento registrado.")
             return
+
+        conteudo_lista = "=== ATENDIMENTOS REGISTRADOS ===\n\n"
         for i, at in enumerate(lista):
             tot = self.calcular_valor_total(at)
             rest = self.calcular_saldo_restante(at)
-            self.__view.mostra_atendimento(i, at, tot, rest)
+            procedimentos_desc = [p.descricao for p in sorted(at.procedimentos,
+                                                              key=lambda
+                                                                  x: x.custo)]
+
+            conteudo_lista += (
+                f"[ID: {i}] Data: {at.data} | Horário: {at.horarioInicio} - {at.horarioFim}\n"
+                f"Clínica: {at.clinica.nome} | Paciente: {at.paciente.nome}\n"
+                f"Tipo: {at.tipoAtendimento.descricao}\n"
+                f"Procedimentos: {procedimentos_desc if procedimentos_desc else 'Nenhum'}\n"
+                f"Valor Base: R$ {at.valor:.2f} | Total: R$ {tot:.2f} | Restante: R$ {rest:.2f}\n"
+                f"----------------------------------------------------------\n"
+            )
+
+        self.__view.mostra_mensagem(conteudo_lista)
 
     def adicionar_procedimento(self):
-        self.listar()
+        self.listar(modo_auxiliar=True)
         lista = self.atendimentos
         if not lista: return
-        
+
+        idx = self.__view.pega_id_atendimento()
+        if idx == -1: return
+
         try:
-            idx = self.__view.pega_id_atendimento()
             atendimento = lista[idx]
         except:
             self.__view.mostra_mensagem("Atendimento inválido.")
             return
 
         desc_p = self.__view.pega_descricao_procedimento()
+        if not desc_p: return
+
         procedimento = self.__c_procedimentos.busca_procedimento(desc_p)
 
         if not procedimento:
@@ -151,18 +189,20 @@ class AtendimentoController:
             return
 
         atendimento.adicionar_procedimento(procedimento)
-        
+
         chave = self.__gerar_chave(atendimento)
         self.__dao.add(chave, atendimento)
-        self.__view.mostra_mensagem(f"Procedimento adicionado!")
+        self.__view.mostra_mensagem("Procedimento adicionado!")
 
     def registrar_pagamento(self):
-        self.listar()
+        self.listar(modo_auxiliar=True)
         lista = self.atendimentos
         if not lista: return
-        
+
+        idx = self.__view.pega_id_atendimento()
+        if idx == -1: return
+
         try:
-            idx = self.__view.pega_id_atendimento()
             atendimento = lista[idx]
         except:
             self.__view.mostra_mensagem("Atendimento inválido.")
@@ -177,12 +217,13 @@ class AtendimentoController:
         if not pagamento: return
 
         atendimento.adicionar_pagamento(pagamento)
-        
+
         chave = self.__gerar_chave(atendimento)
         self.__dao.add(chave, atendimento)
-        
+
         novo_restante = self.calcular_saldo_restante(atendimento)
-        self.__view.mostra_mensagem(f"Pagamento efetuado! Restante: R$ {novo_restante:.2f}")
+        self.__view.mostra_mensagem(
+            f"Pagamento efetuado! Restante: R$ {novo_restante:.2f}")
 
     def retornar(self):
         pass
