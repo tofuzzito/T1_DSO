@@ -1,21 +1,27 @@
-class SistemaView:
-    def mostra_menu_principal(self) -> str:
-        print("\n=========================================")
-        print("    SISTEMA DE GESTÃO MÉDICA - MVC       ")
-        print("=========================================")
-        print("1 - Gerenciar Clínicas")
-        print("2 - Gerenciar Pacientes")
-        print("3 - Gerenciar Profissionais de Saúde")
-        print("4 - Gerenciar Procedimentos")
-        print("5 - Gerenciar Tipos de Atendimento")
-        print("6 - Gerenciar Atendimentos & Pagamentos")
-        print("7 - Central de Relatórios")
-        print("0 - Sair do Sistema")
-        print("=========================================")
-        return input("Escolha o módulo desejado: ")
+import FreeSimpleGUI as sg
 
-    def mostra_opcao_invalida(self):
-        print("Opção inválida!")
+
+class SistemaView:
+    def mostra_menu_principal(self):
+        layout = [
+            [sg.Text('=== MENU PRINCIPAL - SISTEMA CLÍNICAS ===',
+                     font=('Arial', 14, 'bold'))],
+            [sg.Button('Clínicas', size=(25, 1))],
+            [sg.Button('Pacientes', size=(25, 1))],
+            [sg.Button('Profissionais', size=(25, 1))],
+            [sg.Button('Procedimentos', size=(25, 1))],
+            [sg.Button('Tipos de Atendimento', size=(25, 1))],
+            [sg.Button('Atendimentos', size=(25, 1))],
+            [sg.Button('Relatórios', size=(25, 1))],
+            [sg.Button('Sair', size=(25, 1),
+                       button_color=('white', 'darkred'))]
+        ]
+
+        window = sg.Window('Sistema de Atendimento', layout,
+                           element_justification='c')
+        botao, valores = window.read()
+        window.close()
+        return botao
 
     def mostra_mensagem_encerramento(self):
-        print("\nFinalizando o sistema... Até logo!")
+        sg.popup("Encerrando o sistema. Até logo!", title="Fim")
